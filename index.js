@@ -33,6 +33,52 @@ module.exports = function (options) {
       Number.isInteger(state.height) && state.height > 0;
   }
 
+  function getValidWindowBounds(currentState, screenBounds) {
+    var newState = Object.assign({}, currentState)
+
+    // Fix window position
+    if (
+      currentState.x < screenBounds.x ||
+      currentState.x > screenBounds.x + screenBounds.width
+    ) {
+      newState.x = screenBounds.x
+    }
+
+    if (
+      currentState.y < screenBounds.y ||
+      currentState.y > screenBounds.y + screenBounds.height
+    ) {
+      newState.y = screenBounds.y
+    }
+
+    // Fix window dimensions
+    if (currentState.width > screenBounds.width) {
+      newState.width = screenBounds.width
+    }
+
+    if (currentState.height > screenBounds.height) {
+      newState.height = screenBounds.height
+    }
+
+    // if window position was fixed and window size is smaller than screen size,
+    // update window postion again to center it in screen
+    if (
+      (
+        currentState.x !== newState.x ||
+        currentState.y !== newState.y
+      ) &&
+      (
+        newState.width < screenBounds.width ||
+        newState.height < screenBounds.height
+      )
+    ) {
+      newState.x = Math.floor(newState.x + (screenBounds.width - newState.width) / 2)
+      newState.y = Math.floor(newState.y + (screenBounds.height - newState.height) / 2)
+    }
+
+    return newState
+  }
+
   function validateState() {
     var isValid = state && (hasBounds() || state.isMaximized || state.isFullScreen);
     if (!isValid) {
@@ -43,28 +89,7 @@ module.exports = function (options) {
     if (hasBounds() && state.displayBounds) {
       // Check if the display where the window was last open is still available
       var displayBounds = screen.getDisplayMatching(state).bounds;
-      var sameBounds = deepEqual(state.displayBounds, displayBounds, {strict: true});
-      if (!sameBounds) {
-        if (displayBounds.width < state.displayBounds.width) {
-          if (state.x > displayBounds.width) {
-            state.x = 0;
-          }
-
-          if (state.width > displayBounds.width) {
-            state.width = displayBounds.width;
-          }
-        }
-
-        if (displayBounds.height < state.displayBounds.height) {
-          if (state.y > displayBounds.height) {
-            state.y = 0;
-          }
-
-          if (state.height > displayBounds.height) {
-            state.height = displayBounds.height;
-          }
-        }
-      }
+      state = getValidWindowBounds(state, displayBounds);
     }
   }
 
@@ -119,6 +144,11 @@ module.exports = function (options) {
     saveState();
   }
 
+  function fixPosition(win) {
+    // Mitigate positionning issues on windows: https://github.com/electron/electron/issues/10862
+    win.setPosition(state.x, state.y);
+  }
+
   function manage(win) {
     if (config.maximize && state.isMaximized) {
       win.maximize();
@@ -126,6 +156,9 @@ module.exports = function (options) {
     if (config.fullScreen && state.isFullScreen) {
       win.setFullScreen(true);
     }
+
+    fixPosition(win);
+
     win.on('resize', stateChangeHandler);
     win.on('move', stateChangeHandler);
     win.on('close', closeHandler);
