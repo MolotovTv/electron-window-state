@@ -72,8 +72,8 @@ module.exports = function (options) {
         newState.height < screenBounds.height
       )
     ) {
-      newState.x = newState.x + (screenBounds.width - newState.width) / 2
-      newState.y = newState.y + (screenBounds.height - newState.height) / 2
+      newState.x = Math.floor(newState.x + (screenBounds.width - newState.width) / 2)
+      newState.y = Math.floor(newState.y + (screenBounds.height - newState.height) / 2)
     }
 
     return newState
