@@ -146,7 +146,10 @@ module.exports = function (options) {
 
   function fixPosition(win) {
     // Mitigate positionning issues on windows: https://github.com/electron/electron/issues/10862
-    win.setPosition(state.x, state.y);
+    var x = parseInt(state.x, 10) || 0;
+    var y = parseInt(state.y, 10) || 0;
+
+    win.setPosition(x, y);
   }
 
   function manage(win) {
