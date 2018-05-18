@@ -153,14 +153,16 @@ module.exports = function (options) {
   }
 
   function manage(win) {
-    if (config.maximize && state.isMaximized) {
-      win.maximize();
-    }
-    if (config.fullScreen && state.isFullScreen) {
+    // fullscreen is only applicable on OSX
+    if (process.platform === "darwin" && config.fullScreen && state.isFullScreen) {
       win.setFullScreen(true);
     }
-
-    fixPosition(win);
+    else if (config.maximize && state.isMaximized) {
+      win.maximize();
+    }
+    else {
+      fixPosition(win);
+    }
 
     win.on('resize', stateChangeHandler);
     win.on('move', stateChangeHandler);
